@@ -151,6 +151,7 @@ function renderUnits() {
 function renderHome() {
   hide('modeSel'); hide('game'); hide('result'); show('home');
   renderSubjects();
+  renderExamBar();
   renderReviewBar();
   renderUnits();
 }
@@ -549,6 +550,214 @@ function retryMode() {
   else if (m === 'ox') startOX();
   else if (m === 'match') startMatch();
   else if (m === 'review') { if (wrongList().length) startReview(); else renderHome(); }
+}
+
+/* ============ 6) 모의고사 (두 과목 · 합격/불합격 · 해설은 제출 후) ============ */
+var EXAM_MODES = [
+  { key: 'real', nm: '실전 모의고사', ds: '40문항 · 컴퓨터 20 + 스프레드시트 20', counts: { comp: 20, excel: 20 } },
+  { key: 'mini', nm: '미니 모의고사', ds: '20문항 · 과목당 10', counts: { comp: 10, excel: 10 } },
+  { key: 'full', nm: '전체 한번에', ds: '배운 개념 문제를 한 번에 총정리', counts: { comp: 'all', excel: 'all' } },
+];
+var PASS_AVG = 60, FAIL_UNDER = 40;   // 합격 평균 / 과락 기준
+
+function renderExamBar() {
+  var box = $('examBar');
+  if (!box) return;
+  // 두 과목 모두 문제가 있어야 모의고사 노출
+  var ready = SUBJECT_ORDER.filter(function (k) { return DATA[k] && DATA[k].ready && examPool(k).length; });
+  if (ready.length < 1) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="exambar">' +
+    '<div class="exhead">🏆 모의고사' +
+    '<span class="exsub">두 과목을 한번에 풀고 <b style="color:var(--ok)">합격/불합격</b>까지 · 풀이(해설)는 다 푼 뒤 모아보기</span></div>' +
+    '<div class="exopts">' + EXAM_MODES.map(function (m, i) {
+      return '<button class="exbtn" onclick="startExam(EXAM_MODES[' + i + '])"><b>' + m.nm + '</b><span>' + m.ds + '</span></button>';
+    }).join('') + '</div></div>';
+}
+
+// 과목의 모든 스피드퀴즈 문제 → 평평한 배열
+function examPool(k) {
+  var s = DATA[k], arr = [];
+  if (s && s.units) s.units.forEach(function (u) {
+    (u.quiz || []).forEach(function (q) {
+      arr.push({ subj: k, subjName: s.name, unit: u.name, q: q.q, o: q.o, a: q.a, ex: q.ex });
+    });
+  });
+  return arr;
+}
+function buildExam(counts) {
+  var qs = [];
+  SUBJECT_ORDER.forEach(function (k) {
+    if (!DATA[k] || !DATA[k].ready) return;
+    var pool = shuffle(examPool(k));
+    var want = counts[k] === 'all' ? pool.length : Math.min(counts[k] || 0, pool.length);
+    for (var i = 0; i < want; i++) {
+      var src = pool[i];
+      var opts = shuffle(src.o.map(function (t, idx) { return { t: t, correct: idx === src.a }; }));
+      qs.push({
+        subj: src.subj, subjName: src.subjName, unit: src.unit, q: src.q,
+        opts: opts, ans: opts.findIndex(function (o) { return o.correct; }), ex: src.ex, sel: null,
+      });
+    }
+  });
+  return qs;
+}
+
+function startExam(mode) {
+  var qs = buildExam(mode.counts);
+  if (!qs.length) { alert('문제를 준비하지 못했어요.'); renderHome(); return; }
+  beginGame('exam', '📝 ' + mode.nm);
+  state.unit = null;
+  state.examMode = mode;
+  state.examTitle = mode.nm;
+  state.queue = qs;
+  $('hudScore').classList.add('hidden');   // 시험 중에는 점수·정답 숨김
+  $('hudCombo').classList.add('hidden');
+  hide('nextBtn');
+  renderExamQ();
+}
+function examAnswered() {
+  return state.queue.filter(function (q) { return q.sel !== null; }).length;
+}
+function renderExamQ() {
+  var total = state.queue.length, item = state.queue[state.idx];
+  $('hudLeft').textContent = (state.idx + 1) + ' / ' + total;
+  $('pgFill').style.width = (state.idx / total * 100) + '%';
+  var opts = item.opts.map(function (o, i) {
+    return '<div class="opt' + (item.sel === i ? ' sel' : '') + '" onclick="selectExam(' + i + ')">' +
+      '<div class="k">' + 'ABCD'[i] + '</div><div>' + o.t + '</div></div>';
+  }).join('');
+  var last = state.idx === total - 1;
+  $('stage').innerHTML =
+    '<div class="qcard">' +
+      '<div class="row" style="justify-content:space-between">' +
+        '<div class="qnum">Q' + (state.idx + 1) + ' · ' + item.subjName + '</div>' +
+        '<div class="qnum">응답 ' + examAnswered() + ' / ' + total + '</div></div>' +
+      '<div class="qtext">' + item.q + '</div>' +
+      '<div class="opts">' + opts + '</div>' +
+    '</div>' +
+    '<div class="row" style="margin-top:16px;gap:10px">' +
+      '<button class="btn ghost" style="flex:1" onclick="examNav(-1)"' + (state.idx === 0 ? ' disabled' : '') + '>← 이전</button>' +
+      '<button class="btn" style="flex:1" onclick="examNav(1)">' + (last ? '제출하기 ✓' : '다음 →') + '</button>' +
+    '</div>';
+}
+function selectExam(i) {
+  state.queue[state.idx].sel = i;   // 정답 여부는 알려주지 않음(시험)
+  renderExamQ();
+}
+function examNav(d) {
+  if (d > 0 && state.idx === state.queue.length - 1) { confirmSubmitExam(); return; }
+  state.idx = Math.min(state.queue.length - 1, Math.max(0, state.idx + d));
+  renderExamQ();
+}
+function confirmSubmitExam() {
+  var un = state.queue.length - examAnswered();
+  var msg = un > 0 ? ('아직 풀지 않은 문제가 ' + un + '개 있어요.\n제출할까요?') : '답안을 제출할까요?';
+  if (confirm(msg)) finishExam();
+}
+// 채점: 과목별 100점 환산 → 과락(40 미만)/평균(60 이상)으로 합격 판정
+function gradeExam() {
+  var per = {};
+  state.queue.forEach(function (q) {
+    if (!per[q.subj]) per[q.subj] = { name: q.subjName, total: 0, correct: 0 };
+    per[q.subj].total++;
+    if (q.sel === q.ans) per[q.subj].correct++;
+  });
+  var scores = SUBJECT_ORDER.filter(function (k) { return per[k]; }).map(function (k) {
+    var p = per[k];
+    return { name: p.name, correct: p.correct, total: p.total, score: Math.round(p.correct / p.total * 100) };
+  });
+  var avg = Math.round(scores.reduce(function (a, x) { return a + x.score; }, 0) / scores.length);
+  var hasFail = scores.some(function (x) { return x.score < FAIL_UNDER; });
+  var pass = !hasFail && avg >= PASS_AVG;
+  var totalCorrect = state.queue.filter(function (q) { return q.sel === q.ans; }).length;
+  return { scores: scores, avg: avg, pass: pass, hasFail: hasFail, totalCorrect: totalCorrect, totalQ: state.queue.length };
+}
+function finishExam() {
+  var r = gradeExam();
+  state.examResult = r;
+  state.examDur = Math.round((Date.now() - (state.startTime || Date.now())) / 1000);
+  recordResult(0, r.totalCorrect * 5);   // XP만 적립(특정 단원 아님)
+  showExamResult();
+}
+function showExamResult() {
+  var r = state.examResult;
+  hide('game'); hide('home'); show('result');
+  var emoji = r.pass ? '🎉' : '💪';
+  var ss = r.scores.map(function (x) {
+    var fail = x.score < FAIL_UNDER;
+    return '<div class="ss"><div class="nm">' + x.name + '</div>' +
+      '<div class="sc' + (fail ? ' fail' : '') + '">' + x.score + '<span style="font-size:13px">점</span></div>' +
+      '<div class="ct">' + x.correct + ' / ' + x.total + ' 정답</div>' +
+      (fail ? '<div class="flag">과락</div>' : '') + '</div>';
+  }).join('');
+  $('result').innerHTML =
+    '<div class="result">' +
+      (state.examTitle ? '<div class="sub" style="font-weight:700">' + state.examTitle + '</div>' : '') +
+      '<div class="big">' + emoji + '</div>' +
+      '<div class="verdict ' + (r.pass ? 'pass' : 'fail') + '">' + (r.pass ? '합격' : '불합격') + '</div>' +
+      '<div class="sub">평균 <b style="color:var(--tx)">' + r.avg + '점</b> · 정답 ' + r.totalCorrect + '/' + r.totalQ +
+        ' · 소요 ' + Math.floor(state.examDur / 60) + '분 ' + (state.examDur % 60) + '초</div>' +
+      '<div class="subjscore">' + ss + '</div>' +
+      (r.hasFail ? '<div class="sub" style="color:var(--no);font-size:13px">한 과목 이상 40점 미만(과락)이에요.</div>'
+                 : '<div class="sub" style="font-size:13px">과락 없이 평균 60점 이상이면 합격이에요.</div>') +
+      submitExamButtonHtml() +
+      '<div class="row" style="justify-content:center;margin-top:18px;flex-wrap:wrap">' +
+        '<button class="btn sec" onclick="showExamReview()">📖 풀이 보기 (' + (r.totalQ - r.totalCorrect) + '개 오답)</button>' +
+        '<button class="btn sec" onclick="goHome()">홈으로</button>' +
+        '<button class="btn" onclick="startExam(state.examMode)">다시 도전</button>' +
+      '</div>' +
+    '</div>';
+}
+// 풀이과정: 문제 다 푼 뒤에 전체 문항의 정답·해설 모아보기
+function showExamReview() {
+  hide('game'); hide('home'); show('result');
+  var items = state.queue.map(function (q, n) {
+    var opts = q.opts.map(function (o, i) {
+      var cls = 'opt';
+      if (i === q.ans) cls += ' correct';
+      else if (i === q.sel) cls += ' wrong';
+      var tag = (i === q.ans) ? ' ✔' : (i === q.sel ? ' ✖(내 답)' : '');
+      return '<div class="' + cls + '"><div class="k">' + 'ABCD'[i] + '</div><div>' + o.t + tag + '</div></div>';
+    }).join('');
+    var mark = (q.sel === q.ans) ? '<span style="color:var(--ok)">✅ 정답</span>'
+      : (q.sel === null ? '<span style="color:var(--tx2)">⬜ 미응답</span>' : '<span style="color:var(--no)">❌ 오답</span>');
+    return '<div class="reviewitem">' +
+      '<div class="rq-meta">Q' + (n + 1) + ' · ' + q.subjName + ' · ' + q.unit + ' · ' + mark + '</div>' +
+      '<div class="rq-text">' + q.q + '</div>' +
+      '<div class="opts">' + opts + '</div>' +
+      '<div class="exp ' + (q.sel === q.ans ? 'ok' : 'no') + '"><b>해설</b>' + q.ex + '</div>' +
+    '</div>';
+  }).join('');
+  $('result').innerHTML =
+    '<div class="result" style="text-align:left">' +
+      '<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<div style="font-weight:800;font-size:16px">📖 풀이 보기 · ' + state.queue.length + '문항</div>' +
+        '<button class="btn sec" onclick="showExamResult()">← 결과로</button></div>' +
+      items +
+      '<div class="row" style="justify-content:center;margin-top:14px">' +
+        '<button class="btn sec" onclick="goHome()">홈으로</button>' +
+        '<button class="btn" onclick="startExam(state.examMode)">다시 도전</button></div>' +
+    '</div>';
+  window.scrollTo(0, 0);
+}
+// 결과 제출(교사 링크로 배포 시에만)
+function submitExamButtonHtml() {
+  if (!submitEnabled()) return '';
+  return '<div class="row" style="justify-content:center;margin-top:6px">' +
+    '<button class="btn" style="background:#16a34a" onclick="submitExamResult()">📤 선생님께 결과 제출</button></div>';
+}
+function submitExamResult() {
+  if (!submitEnabled()) return;
+  var r = state.examResult;
+  ResultCollector.config.tool = '컴활2급 모의고사 · ' + (state.examTitle || '');
+  ResultCollector.open({
+    score: r.avg,
+    correct: r.totalCorrect,
+    total: r.totalQ,
+    durationSec: state.examDur,
+    labels: { score: '평균점수', correct: '맞힘', total: '문항수', wrong: '합격여부' },
+    wrong: r.pass ? '합격' : '불합격',
+  });
 }
 
 /* ---------- init ---------- */
