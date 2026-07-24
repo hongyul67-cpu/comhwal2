@@ -149,6 +149,7 @@ function renderUnits() {
 }
 
 function renderHome() {
+  clearExamTimer();
   hide('modeSel'); hide('game'); hide('result'); show('home');
   renderSubjects();
   renderExamBar();
@@ -177,6 +178,8 @@ function openUnit(u) {
 
 /* ---------- 게임 공통 ---------- */
 function beginGame(mode, label) {
+  clearExamTimer();
+  var ht = $('hudTimer'); if (ht) { ht.classList.add('hidden'); ht.classList.remove('warn'); }
   state.mode = mode;
   state.idx = 0; state.score = 0; state.combo = 0;
   state.correct = 0; state.wrong = 0; state.answered = false;
@@ -554,11 +557,14 @@ function retryMode() {
 
 /* ============ 6) 모의고사 (두 과목 · 합격/불합격 · 해설은 제출 후) ============ */
 var EXAM_MODES = [
-  { key: 'real', nm: '실전 모의고사', ds: '40문항 · 컴퓨터 20 + 스프레드시트 20', counts: { comp: 20, excel: 20 } },
-  { key: 'mini', nm: '미니 모의고사', ds: '20문항 · 과목당 10', counts: { comp: 10, excel: 10 } },
-  { key: 'full', nm: '전체 한번에', ds: '배운 개념 문제를 한 번에 총정리', counts: { comp: 'all', excel: 'all' } },
+  { key: 'real', nm: '실전 모의고사', ds: '40문항 · 40분 · 컴퓨터 20 + 스프레드시트 20', counts: { comp: 20, excel: 20 }, min: 40 },
+  { key: 'mini', nm: '미니 모의고사', ds: '20문항 · 20분 · 과목당 10', counts: { comp: 10, excel: 10 }, min: 20 },
+  { key: 'full', nm: '전체 한번에', ds: '배운 개념 문제 총정리 · 100분', counts: { comp: 'all', excel: 'all' }, min: 100 },
 ];
 var PASS_AVG = 60, FAIL_UNDER = 40;   // 합격 평균 / 과락 기준
+var examTimer = null;
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+function clearExamTimer() { if (examTimer) { clearInterval(examTimer); examTimer = null; } }
 
 function renderExamBar() {
   var box = $('examBar');
@@ -613,7 +619,23 @@ function startExam(mode) {
   $('hudScore').classList.add('hidden');   // 시험 중에는 점수·정답 숨김
   $('hudCombo').classList.add('hidden');
   hide('nextBtn');
+  // 제한 시간 타이머
+  state.examTimeUp = false;
+  state.examDeadline = Date.now() + (mode.min || 20) * 60000;
+  var ht = $('hudTimer');
+  if (ht) { ht.classList.remove('hidden'); }
+  examTick();
+  examTimer = setInterval(examTick, 1000);
   renderExamQ();
+}
+function examTick() {
+  var left = Math.max(0, Math.round((state.examDeadline - Date.now()) / 1000));
+  var ht = $('hudTimer');
+  if (ht) {
+    ht.textContent = '⏱ ' + pad2(Math.floor(left / 60)) + ':' + pad2(left % 60);
+    ht.classList.toggle('warn', left <= 300);   // 5분 이하 경고
+  }
+  if (left <= 0) { clearExamTimer(); state.examTimeUp = true; finishExam(true); }
 }
 function examAnswered() {
   return state.queue.filter(function (q) { return q.sel !== null; }).length;
@@ -672,7 +694,10 @@ function gradeExam() {
   var totalCorrect = state.queue.filter(function (q) { return q.sel === q.ans; }).length;
   return { scores: scores, avg: avg, pass: pass, hasFail: hasFail, totalCorrect: totalCorrect, totalQ: state.queue.length };
 }
-function finishExam() {
+function finishExam(timeUp) {
+  clearExamTimer();
+  var ht = $('hudTimer'); if (ht) { ht.classList.add('hidden'); ht.classList.remove('warn'); }
+  state.examTimeUp = !!timeUp;
   var r = gradeExam();
   state.examResult = r;
   state.examDur = Math.round((Date.now() - (state.startTime || Date.now())) / 1000);
@@ -692,6 +717,7 @@ function showExamResult() {
   }).join('');
   $('result').innerHTML =
     '<div class="result">' +
+      (state.examTimeUp ? '<div class="sub" style="color:var(--no);font-weight:700">⏰ 시간 종료로 자동 제출됐어요</div>' : '') +
       (state.examTitle ? '<div class="sub" style="font-weight:700">' + state.examTitle + '</div>' : '') +
       '<div class="big">' + emoji + '</div>' +
       '<div class="verdict ' + (r.pass ? 'pass' : 'fail') + '">' + (r.pass ? '합격' : '불합격') + '</div>' +

@@ -134,8 +134,10 @@
   .hud .pgbar{flex:1;height:8px;background:var(--card2);border-radius:6px;overflow:hidden}
   .hud .pgbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--pri),#9d6bff);width:0;transition:.3s}
   .hud .chip{font-size:13px;font-weight:700;background:var(--card);border:1px solid var(--line);
-    padding:6px 10px;border-radius:10px;white-space:nowrap}
+    padding:6px 10px;border-radius:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
   .combo{color:var(--gold)}
+  #hudTimer.warn{color:var(--no);border-color:var(--no);animation:tblink 1s steps(2,start) infinite}
+  @keyframes tblink{50%{opacity:.55}}
 
   /* 퀴즈 카드 */
   .qcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:var(--sh)}
@@ -251,6 +253,7 @@
     <div class="hud">
       <div class="chip" id="hudLeft">1 / 10</div>
       <div class="pgbar"><i id="pgFill"></i></div>
+      <div class="chip hidden" id="hudTimer">⏱ 00:00</div>
       <div class="chip combo hidden" id="hudCombo">🔥 0</div>
       <div class="chip" id="hudScore">0점</div>
     </div>
@@ -275,6 +278,7 @@
         data-max-num="40"></script>
 <script src="data/comp.js"></script>
 <script src="data/excel.js"></script>
+<script src="data/extra.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
