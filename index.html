@@ -22,7 +22,7 @@
   .hidden{display:none!important}
 
   /* 헤더 */
-  header{display:flex;align-items:center;gap:10px;padding:6px 2px 14px}
+  header{display:flex;align-items:center;gap:10px;padding:6px 2px 14px;flex-wrap:wrap}
   .logo{font-size:20px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
   .logo .badge{background:linear-gradient(135deg,var(--pri),#9d6bff);color:#fff;font-size:12px;
     padding:3px 8px;border-radius:8px;font-weight:700}
@@ -85,6 +85,67 @@
   .reviewitem .opt{cursor:default}
   .reviewitem .opt.correct{border-color:var(--ok);background:rgba(39,192,147,.16)}
   .reviewitem .opt.wrong{border-color:var(--no);background:rgba(255,90,106,.16)}
+
+  /* ===== 계급(티어) · 랭크 포인트 ===== */
+  .rankmini{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:6px 12px 6px 8px;cursor:pointer;transition:.12s}
+  .rankmini:hover{border-color:var(--pri);transform:translateY(-1px)}
+  .rankmini .rmico{font-size:22px;line-height:1}
+  .rankmini .rmnm{font-size:13px;font-weight:900;line-height:1.2}
+  .rankmini .rmrp{font-size:11px;color:var(--tx2)}
+  .rankmini .rmrp b{color:var(--gold)}
+
+  .rankcard{display:flex;align-items:center;gap:14px;background:var(--card);border:2px solid var(--line);
+    border-radius:16px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--sh)}
+  .rankcard .rkico{font-size:34px;width:60px;height:60px;flex:none;border:2px solid var(--line);
+    border-radius:16px;display:flex;align-items:center;justify-content:center}
+  .rankcard .rkmain{flex:1;min-width:0}
+  .rankcard .rknm{font-size:19px;font-weight:900;letter-spacing:-.5px}
+  .rankcard .rkbar{height:9px;background:var(--card2);border-radius:6px;overflow:hidden;margin:7px 0 5px}
+  .rankcard .rkbar>i{display:block;height:100%;border-radius:6px;transition:width .5s}
+  .rankcard .rkds{font-size:12px;color:var(--tx2)}
+  .rankcard .rkright{text-align:right;flex:none}
+  .rankcard .rkrp{font-size:22px;font-weight:900;color:var(--gold);line-height:1}
+  .rankcard .rkrp span{font-size:11px;color:var(--tx2);margin-left:3px}
+  .rankcard .rkbtn{padding:7px 12px;font-size:12px;margin-top:8px}
+  @media(max-width:480px){
+    .rankcard{gap:10px;padding:12px}
+    .rankcard .rkico{width:48px;height:48px;font-size:26px}
+    .rankcard .rknm{font-size:16px}
+    .rankcard .rkrp{font-size:18px}
+  }
+
+  .rpline{font-size:15px;font-weight:800;margin-top:12px}
+  .rpbanner{margin-top:8px;border-radius:12px;padding:11px 14px;font-size:14px;font-weight:800;
+    animation:pop .25s}
+  .rpbanner.up{background:linear-gradient(135deg,rgba(255,210,63,.22),rgba(39,192,147,.18));
+    border:1px solid var(--gold);color:var(--gold)}
+  .rpbanner.down{background:rgba(255,90,106,.14);border:1px solid var(--no);color:var(--no)}
+
+  /* 랭킹판 */
+  #board{position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.62);display:flex;
+    align-items:center;justify-content:center;padding:16px}
+  #board.hidden{display:none!important}
+  .bdpanel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;
+    width:100%;max-width:720px;max-height:86vh;overflow:auto;box-shadow:var(--sh)}
+  .bdtop{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+  .bdnote{font-size:12px;color:var(--tx2);margin-bottom:12px}
+  .bdhead,.bdrow{display:grid;grid-template-columns:52px 1fr 110px 78px 52px;gap:8px;align-items:center;
+    padding:10px 10px;border-radius:10px;font-size:13.5px}
+  .bdhead{color:var(--tx2);font-size:12px;font-weight:700;border-bottom:1px solid var(--line);border-radius:0}
+  .bdrow{background:var(--card2);margin-top:7px}
+  .bdrow.top{background:linear-gradient(135deg,rgba(255,210,63,.14),transparent);border:1px solid var(--gold)}
+  .bdno{font-weight:900;text-align:center;font-size:15px}
+  .bdnm{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bdtier{font-weight:800;font-size:12.5px}
+  .bdrp{color:var(--gold);font-weight:900;text-align:right}
+  .bddt{color:var(--tx2);font-size:11.5px;text-align:right}
+  .bdempty{text-align:center;color:var(--tx2);padding:32px 10px;line-height:1.8}
+  @media(max-width:520px){
+    .bdhead,.bdrow{grid-template-columns:40px 1fr 74px 62px;font-size:12.5px;padding:9px 8px}
+    .bddt{display:none}
+    .bdtier{font-size:11px}
+  }
 
   /* ===== 설명 모드 (프로젝터·전자칠판) ===== */
   #lesson{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;
@@ -273,11 +334,19 @@
   <header>
     <div class="logo">🎓 컴활 2급 <span class="badge">필기 개념게임</span></div>
     <div class="spacer"></div>
-    <div class="xpwrap">누적 별 <b id="totStar">0</b> ⭐<br><span id="totXp">0</span> XP</div>
+    <div class="rankmini" onclick="openBoard()" title="랭킹판 보기">
+      <div class="rmico" id="rmIco">🖤</div>
+      <div>
+        <div class="rmnm" id="rmNm">아이언 Ⅳ</div>
+        <div class="rmrp"><b id="rmRp">0</b> RP</div>
+      </div>
+    </div>
+    <div class="xpwrap">⭐ <b id="totStar">0</b> · <span id="totXp">0</span> XP</div>
   </header>
 
   <!-- 홈: 과목 + 단원 -->
   <section id="home">
+    <div id="rankCard"></div>
     <div class="subjects" id="subjects"></div>
     <a href="summary.html" class="sumbar">📌 <b>시험 직전 핵심 요약</b> — 자주 나오는 것만 한눈에 (바로가기 키·헷갈리는 개념·함수·오류 메시지) <span class="arr">→</span></a>
     <div id="examBar"></div>
@@ -327,6 +396,20 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 랭킹판 -->
+<div id="board" class="hidden">
+  <div class="bdpanel">
+    <div class="bdtop">
+      <div style="font-weight:900;font-size:18px">🏆 랭킹판</div>
+      <div style="flex:1"></div>
+      <button class="btn ghost" style="padding:8px 12px" onclick="clearBoard()">기록 지우기</button>
+      <button class="btn sec" style="padding:8px 14px" onclick="closeBoard()">닫기</button>
+    </div>
+    <div class="bdnote">이 컴퓨터에 저장돼요 · 같은 이름은 최고 RP만 남습니다</div>
+    <div id="boardBody"></div>
+  </div>
+</div>
 
 <!-- 설명 모드 (프로젝터·전자칠판용 전체 화면) -->
 <div id="lesson" class="hidden">
