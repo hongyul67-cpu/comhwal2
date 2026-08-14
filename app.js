@@ -786,6 +786,129 @@ function submitExamResult() {
   });
 }
 
+/* ============ 7) 설명 모드 (프로젝터·전자칠판) ============
+ * 단원의 개념 카드 + 퀴즈를 큰 화면 슬라이드로 넘기며 설명한다.
+ * 2단계 진행: 용어/발문만 보여 주고 → (키 한 번) 설명/정답 공개 → (키) 다음.
+ */
+var LS = { deck: [], i: 0, shown: false };
+
+function buildLessonDeck(unit, subjName) {
+  var d = [];
+  d.push({ t: 'cover', title: unit.name, sub: subjName, icon: unit.icon || '📘' });
+  (unit.cards || []).forEach(function (c, i) {
+    d.push({ t: 'card', n: i + 1, of: (unit.cards || []).length, term: c.t, def: c.d });
+  });
+  (unit.quiz || []).forEach(function (q, i) {
+    d.push({ t: 'quiz', n: i + 1, of: (unit.quiz || []).length, q: q.q, o: q.o, a: q.a, ex: q.ex });
+  });
+  d.push({ t: 'end', title: '수업 끝!', sub: unit.name, icon: '🎉' });
+  return d;
+}
+function startLesson() {
+  if (!state.unit) { renderHome(); return; }
+  LS.deck = buildLessonDeck(state.unit, DATA[state.subject].name);
+  LS.i = 0; LS.shown = false;
+  $('lsTitle').textContent = DATA[state.subject].icon + ' ' + state.unit.name;
+  show('lesson');
+  document.body.style.overflow = 'hidden';
+  renderLesson();
+}
+function lsClose() {
+  hide('lesson');
+  document.body.style.overflow = '';
+  if (document.fullscreenElement && document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) {} }
+}
+function lsFull() {
+  var el = $('lesson');
+  if (!document.fullscreenElement) { if (el.requestFullscreen) el.requestFullscreen().catch(function () {}); }
+  else if (document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) {} }
+}
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function renderLesson() {
+  var s = LS.deck[LS.i], body = $('lsBody'), html = '';
+  $('lsCount').textContent = (LS.i + 1) + ' / ' + LS.deck.length;
+
+  if (s.t === 'cover' || s.t === 'end') {
+    html = '<div class="ls-cover">' +
+      '<div style="font-size:min(12vh,15vw)">' + s.icon + '</div>' +
+      '<div class="ls-term">' + esc(s.title) + '</div>' +
+      '<div class="ls-hint" style="margin-top:min(2vh,14px)">' + esc(s.sub) + '</div>' +
+      (s.t === 'cover' ? '<div class="ls-hint" style="margin-top:min(3vh,20px)">→ · Space · 리모컨으로 넘기세요</div>' : '') +
+      '</div>';
+  } else if (s.t === 'card') {
+    html = '<div class="ls-kicker">개념 ' + s.n + ' / ' + s.of + '</div>' +
+      '<div class="ls-term">' + esc(s.term) + '</div>' +
+      (LS.shown
+        ? '<div class="ls-def">' + esc(s.def) + '</div>'
+        : '<div class="ls-ask">❓ 무엇일까요?</div>');
+  } else if (s.t === 'quiz') {
+    var opts = s.o.map(function (t, i) {
+      var hit = LS.shown && i === s.a;
+      return '<div class="ls-opt' + (hit ? ' hit' : '') + '">' +
+        '<div class="lk">' + '①②③④'[i] + '</div><div>' + esc(t) + '</div></div>';
+    }).join('');
+    html = '<div class="ls-kicker">확인 문제 ' + s.n + ' / ' + s.of + '</div>' +
+      '<div class="ls-q">' + esc(s.q) + '</div>' +
+      '<div class="ls-opts">' + opts + '</div>' +
+      (LS.shown ? '<div class="ls-ex"><b>해설</b><br>' + esc(s.ex) + '</div>' : '');
+  }
+  // 보기·해설이 많은 슬라이드, 설명이 긴 카드는 글씨를 줄여 한 화면에 담는다
+  var dense = (s.t === 'quiz');
+  var longdef = (s.t === 'card' && (String(s.def).length > 60 || String(s.term).length > 14));
+  body.className = 'ls-body' + (dense ? ' dense' : '') + (longdef ? ' longdef' : '');
+  body.innerHTML = html;
+  body.scrollTop = 0;
+
+  // 버튼: 아직 안 보여준 단계가 있으면 '공개', 없으면 '다음'
+  var canReveal = (s.t === 'card' || s.t === 'quiz') && !LS.shown;
+  var nb = $('lsNext');
+  nb.textContent = canReveal ? (s.t === 'quiz' ? '정답 보기 👀' : '설명 보기 👀')
+    : (LS.i === LS.deck.length - 1 ? '끝내기 ✓' : '다음 ▶');
+  nb.className = canReveal ? 'rev' : 'main';
+  $('lsPrev').disabled = (LS.i === 0 && !LS.shown);
+}
+function lsStep() {
+  var s = LS.deck[LS.i];
+  if ((s.t === 'card' || s.t === 'quiz') && !LS.shown) { LS.shown = true; renderLesson(); return; }
+  if (LS.i >= LS.deck.length - 1) { lsClose(); return; }
+  LS.i++; LS.shown = false; renderLesson();
+}
+function lsBack() {
+  var s = LS.deck[LS.i];
+  if ((s.t === 'card' || s.t === 'quiz') && LS.shown) { LS.shown = false; renderLesson(); return; }
+  if (LS.i === 0) return;
+  LS.i--;
+  var p = LS.deck[LS.i];
+  LS.shown = (p.t === 'card' || p.t === 'quiz');   // 앞으로 돌아가면 이미 설명한 상태로
+  renderLesson();
+}
+// 키보드 · 프레젠터 리모컨(PageUp/PageDown)
+document.addEventListener('keydown', function (e) {
+  if ($('lesson').classList.contains('hidden')) return;
+  var k = e.key;
+  if (k === 'ArrowRight' || k === ' ' || k === 'Spacebar' || k === 'PageDown') { e.preventDefault(); lsStep(); }
+  else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); lsBack(); }
+  else if (k === 'f' || k === 'F') { e.preventDefault(); lsFull(); }
+  else if (k === 'Escape') { if (!document.fullscreenElement) { e.preventDefault(); lsClose(); } }
+});
+// 좌우 스와이프(전자칠판·태블릿)
+(function () {
+  var x0 = null, y0 = null;
+  var el = document.getElementById('lesson');
+  if (!el) return;
+  el.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) return;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive: true });
+  el.addEventListener('touchend', function (e) {
+    if (x0 === null) return;
+    var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { if (dx < 0) lsStep(); else lsBack(); }
+  }, { passive: true });
+})();
+
 /* ---------- init ---------- */
 updateHeader();
 renderHome();
