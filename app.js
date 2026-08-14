@@ -37,68 +37,17 @@ PROG.board = PROG.board || [];   // 랭킹판(이 컴퓨터) [{name, rp, tier, a
 PROG.name = PROG.name || '';     // 랭킹 등록용 이름
 
 /* ============ 계급(티어) · 랭크 포인트 ============
- * 아이언 → 브론즈 → 실버 → 골드 → 플래티넘 → 다이아 → 마스터
- * 마스터를 뺀 각 티어는 Ⅳ·Ⅲ·Ⅱ·Ⅰ 4단계(단계당 100 RP)
+ * 실제 구현은 공용 모듈 rank.js(CH2Rank)에 있다.
+ * 실기 연습소(comhwal2-excel)와 같은 저장소를 써서 계급이 함께 오른다.
  */
-var TIERS = [
-  { nm: '아이언', ico: '🖤', col: '#8d94a8', min: 0 },
-  { nm: '브론즈', ico: '🥉', col: '#c98a52', min: 400 },
-  { nm: '실버', ico: '🥈', col: '#c3ccdf', min: 800 },
-  { nm: '골드', ico: '🥇', col: '#ffc93c', min: 1200 },
-  { nm: '플래티넘', ico: '💎', col: '#3ee0c0', min: 1600 },
-  { nm: '다이아', ico: '💠', col: '#6fa8ff', min: 2000 },
-  { nm: '마스터', ico: '👑', col: '#c77dff', min: 2400 },
-];
-var ROMAN = ['Ⅳ', 'Ⅲ', 'Ⅱ', 'Ⅰ'];
-
-// rp → { tier, ico, col, div, name, cur, need, pct, isMax }
-function tierOf(rp) {
-  rp = Math.max(0, rp | 0);
-  var ti = 0;
-  for (var i = TIERS.length - 1; i >= 0; i--) { if (rp >= TIERS[i].min) { ti = i; break; } }
-  var t = TIERS[ti], isMax = (ti === TIERS.length - 1);
-  if (isMax) {
-    return { tier: ti, ico: t.ico, col: t.col, div: 0, name: t.nm, cur: rp - t.min, need: 0, pct: 100, isMax: true };
-  }
-  var into = rp - t.min;                 // 0~399
-  var div = Math.min(3, Math.floor(into / 100));
-  var cur = into - div * 100;            // 현재 단계에서 쌓은 RP (0~99)
-  return { tier: ti, ico: t.ico, col: t.col, div: div, name: t.nm + ' ' + ROMAN[div],
-           cur: cur, need: 100, pct: cur, isMax: false };
-}
-function tierRankIndex(rp) {             // 승급/강등 비교용 통합 순위값
-  var t = tierOf(rp);
-  return t.isMax ? 999 : t.tier * 4 + t.div;
-}
-// RP 지급/차감 → { delta, before, after, up, down, t0, t1 }
+CH2Rank.attach(PROG, function () { saveProg(PROG); });
+function tierOf(rp) { return CH2Rank.tierOf(rp); }
 function awardRP(correct, wrong, mult, bonus) {
-  mult = mult || 1;
-  var delta = Math.round(correct * 3 * mult - wrong * 1 * mult + (bonus || 0));
-  var before = PROG.rp;
-  var after = Math.max(0, before + delta);
-  var r0 = tierRankIndex(before), r1 = tierRankIndex(after);
-  PROG.rp = after;
-  if (after > PROG.rpBest) PROG.rpBest = after;
-  saveProg(PROG);
+  var r = CH2Rank.award(correct, wrong, mult, bonus);
   updateHeader();
-  return { delta: after - before, before: before, after: after,
-           up: r1 > r0, down: r1 < r0, t0: tierOf(before), t1: tierOf(after) };
+  return r;
 }
-// 결과 화면에 붙일 RP·승급 배너
-function rpBannerHtml(r) {
-  if (!r) return '';
-  var sign = r.delta > 0 ? '+' : '';
-  var col = r.delta > 0 ? 'var(--ok)' : (r.delta < 0 ? 'var(--no)' : 'var(--tx2)');
-  var h = '<div class="rpline">랭크 포인트 <b style="color:' + col + '">' + sign + r.delta + ' RP</b>' +
-    ' <span style="color:var(--tx2)">→ ' + r.after + ' RP</span></div>';
-  if (r.up) {
-    h += '<div class="rpbanner up">🎊 승급! <b>' + r.t0.name + '</b> → <b style="color:' + r.t1.col + '">' +
-      r.t1.ico + ' ' + r.t1.name + '</b></div>';
-  } else if (r.down) {
-    h += '<div class="rpbanner down">⬇️ 강등 <b>' + r.t0.name + '</b> → <b>' + r.t1.ico + ' ' + r.t1.name + '</b> · 다시 올라가요!</div>';
-  }
-  return h;
-}
+function rpBannerHtml(r) { return CH2Rank.bannerHtml(r); }
 
 /* ---------- 누적 오답 ---------- */
 function wrongKey(subj, unitId, kind, text) { return subj + '|' + unitId + '|' + kind + '|' + String(text).slice(0, 60); }
@@ -156,34 +105,8 @@ function recordResult(pct, xpGain) {
 function updateHeader() {
   var st = document.getElementById('totStar'); if (st) st.textContent = PROG.totStar;
   var xp = document.getElementById('totXp'); if (xp) xp.textContent = PROG.totXp;
-  var t = tierOf(PROG.rp);
-  var ic = document.getElementById('rmIco'), nm = document.getElementById('rmNm'), rp = document.getElementById('rmRp');
-  if (ic) { ic.textContent = t.ico; }
-  if (nm) { nm.textContent = t.name; nm.style.color = t.col; }
-  if (rp) rp.textContent = PROG.rp;
-  renderRankCard();
-}
-function renderRankCard() {
-  var box = document.getElementById('rankCard');
-  if (!box) return;
-  var t = tierOf(PROG.rp);
-  var next = t.isMax ? null : (t.div === 3 ? TIERS[t.tier + 1] : null);
-  var nextLabel = t.isMax ? '최고 계급이에요! 👑'
-    : (next ? ('다음 계급 ' + next.ico + ' ' + next.nm + '까지 ' + (100 - t.cur) + ' RP')
-            : ('다음 단계 ' + TIERS[t.tier].nm + ' ' + ROMAN[t.div + 1] + '까지 ' + (100 - t.cur) + ' RP'));
-  box.innerHTML =
-    '<div class="rankcard" style="border-color:' + t.col + '55">' +
-      '<div class="rkico" style="background:' + t.col + '22;border-color:' + t.col + '">' + t.ico + '</div>' +
-      '<div class="rkmain">' +
-        '<div class="rknm" style="color:' + t.col + '">' + t.name + '</div>' +
-        '<div class="rkbar"><i style="width:' + (t.isMax ? 100 : t.pct) + '%;background:' + t.col + '"></i></div>' +
-        '<div class="rkds">' + nextLabel + '</div>' +
-      '</div>' +
-      '<div class="rkright">' +
-        '<div class="rkrp">' + PROG.rp + '<span>RP</span></div>' +
-        '<button class="btn sec rkbtn" onclick="openBoard()">🏆 랭킹판</button>' +
-      '</div>' +
-    '</div>';
+  CH2Rank.renderMini('rankMini');
+  CH2Rank.renderCard('rankCard');
 }
 
 /* ---------- 유틸 ---------- */
@@ -894,60 +817,9 @@ function submitExamResult() {
   });
 }
 
-/* ============ 랭킹판 (이 컴퓨터에 저장 · 반 대항용) ============ */
-function boardSorted() {
-  return (PROG.board || []).slice().sort(function (a, b) { return b.rp - a.rp; });
-}
-function openBoard() {
-  var list = boardSorted();
-  var rows = list.length
-    ? list.map(function (e, i) {
-        var t = tierOf(e.rp);
-        var medal = ['🥇', '🥈', '🥉'][i] || (i + 1);
-        return '<div class="bdrow' + (i < 3 ? ' top' : '') + '">' +
-          '<div class="bdno">' + medal + '</div>' +
-          '<div class="bdnm">' + escHtml(e.name) + '</div>' +
-          '<div class="bdtier" style="color:' + t.col + '">' + t.ico + ' ' + t.name + '</div>' +
-          '<div class="bdrp">' + e.rp + ' RP</div>' +
-          '<div class="bddt">' + (e.date || '') + '</div>' +
-        '</div>';
-      }).join('')
-    : '<div class="bdempty">아직 등록된 기록이 없어요.<br>모드를 끝내고 <b>랭킹 등록</b>을 눌러 보세요!</div>';
-  $('boardBody').innerHTML =
-    '<div class="bdhead"><div class="bdno">순위</div><div class="bdnm">이름</div>' +
-      '<div class="bdtier">계급</div><div class="bdrp">RP</div><div class="bddt">날짜</div></div>' + rows;
-  show('board');
-}
-function closeBoard() { hide('board'); }
-function clearBoard() {
-  if (!confirm('랭킹판 기록을 모두 지울까요?')) return;
-  PROG.board = []; saveProg(PROG); openBoard();
-}
-function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-// 결과 화면의 '랭킹 등록' 버튼
-function rankRegisterHtml() {
-  return '<div class="row" style="justify-content:center;margin-top:8px">' +
-    '<button class="btn sec" onclick="registerRank()">🏆 랭킹 등록</button></div>';
-}
-function registerRank() {
-  var nm = prompt('랭킹판에 올릴 이름을 적어 주세요 (예: 3반 홍길동)', PROG.name || '');
-  if (nm === null) return;
-  nm = String(nm).trim().slice(0, 20);
-  if (!nm) { alert('이름을 입력해 주세요.'); return; }
-  PROG.name = nm;
-  var d = new Date();
-  var date = (d.getMonth() + 1) + '/' + d.getDate();
-  // 같은 이름은 최고 RP만 남긴다
-  var board = (PROG.board || []).filter(function (e) { return e.name !== nm; });
-  var prev = (PROG.board || []).filter(function (e) { return e.name === nm; })[0];
-  var rp = Math.max(PROG.rp, prev ? prev.rp : 0);
-  board.push({ name: nm, rp: rp, date: date });
-  PROG.board = board.sort(function (a, b) { return b.rp - a.rp; }).slice(0, 20);
-  saveProg(PROG);
-  var pos = boardSorted().findIndex(function (e) { return e.name === nm; }) + 1;
-  toast('🏆 ' + pos + '위 등록!', 'var(--gold)');
-  openBoard();
-}
+/* ---------- 랭킹판 (공용 모듈 위임) ---------- */
+function openBoard() { CH2Rank.openBoard(); }
+function rankRegisterHtml() { return CH2Rank.registerBtnHtml(); }
 
 /* ============ 7) 설명 모드 (프로젝터·전자칠판) ============
  * 단원의 개념 카드 + 퀴즈를 큰 화면 슬라이드로 넘기며 설명한다.
