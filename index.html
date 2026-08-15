@@ -129,6 +129,27 @@
   .ls-body.longdef .ls-term{font-size:min(6vh,8vw)}
   .ls-body.longdef .ls-def{font-size:min(3.6vh,4.6vw);max-width:26em}
 
+  /* 그림 도해 · 개념 정리표 슬라이드 */
+  .ls-body.wide{gap:min(1.6vh,12px);justify-content:flex-start;padding-top:min(2vh,14px)}
+  .ls-h{font-size:min(4.4vh,5.6vw);font-weight:900;line-height:1.25;letter-spacing:-.5px}
+  .ls-svg{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+  .ls-svg svg{max-width:min(100%,1000px);max-height:100%;height:auto;width:auto}
+  .ls-cap{font-size:min(2.6vh,3.4vw);color:var(--tx2);line-height:1.5;max-width:40em}
+  .ls-cap b{color:var(--gold)}
+  .ls-tblwrap{width:100%;max-width:1000px;overflow:auto;flex:0 1 auto}
+  .ls-tbl{border-collapse:collapse;width:100%;font-size:min(2.9vh,3.5vw)}
+  .ls-tbl th,.ls-tbl td{border:1px solid var(--line);padding:min(1.3vh,11px) min(1.6vw,14px);
+    text-align:left;line-height:1.4}
+  .ls-tbl th{background:rgba(79,124,255,.2);font-weight:800;white-space:nowrap;font-size:min(2.6vh,3.2vw)}
+  .ls-tbl td.k{font-weight:800;white-space:nowrap;color:var(--tx)}
+  .ls-tbl td b{color:var(--gold)}
+  .ls-tbl tr:nth-child(even) td{background:rgba(255,255,255,.03)}
+  /* 줄이 많은 표는 더 작게 */
+  .ls-body.bigtbl .ls-tbl{font-size:min(2.3vh,2.9vw)}
+  .ls-body.bigtbl .ls-tbl th{font-size:min(2.1vh,2.7vw)}
+  .ls-body.bigtbl .ls-tbl th,.ls-body.bigtbl .ls-tbl td{padding:min(.9vh,8px) min(1.2vw,11px)}
+  .ls-body.bigtbl .ls-h{font-size:min(3.6vh,4.6vw)}
+
   .ls-bar{flex:none;display:flex;gap:min(1.6vw,12px);padding:min(1.6vh,12px) min(3vw,22px) max(min(2.4vh,18px),14px);
     border-top:1px solid var(--line);background:var(--bg2)}
   .ls-bar button{flex:1;min-height:56px;border:1px solid var(--line);background:var(--card);color:var(--tx);
@@ -354,6 +375,8 @@
 <script src="data/comp.js"></script>
 <script src="data/excel.js"></script>
 <script src="data/extra.js"></script>
+<script src="data/extra2.js"></script>
+<script src="data/lesson.js"></script>
 <script src="rank.js"></script>
 <script src="app.js"></script>
 </body>

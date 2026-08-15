@@ -830,6 +830,12 @@ var LS = { deck: [], i: 0, shown: false };
 function buildLessonDeck(unit, subjName) {
   var d = [];
   d.push({ t: 'cover', title: unit.name, sub: subjName, icon: unit.icon || '📘' });
+  // 그림 도해 · 개념 정리표 (data/lesson.js)
+  var extra = (window.COMHWAL2_LESSON || {})[state.subject + '/' + unit.id] || [];
+  extra.forEach(function (s, i) {
+    d.push({ t: s.type, n: i + 1, of: extra.length, title: s.title, svg: s.svg,
+             head: s.head, rows: s.rows, cap: s.cap });
+  });
   (unit.cards || []).forEach(function (c, i) {
     d.push({ t: 'card', n: i + 1, of: (unit.cards || []).length, term: c.t, def: c.d });
   });
@@ -871,6 +877,22 @@ function renderLesson() {
       '<div class="ls-hint" style="margin-top:min(2vh,14px)">' + esc(s.sub) + '</div>' +
       (s.t === 'cover' ? '<div class="ls-hint" style="margin-top:min(3vh,20px)">→ · Space · 리모컨으로 넘기세요</div>' : '') +
       '</div>';
+  } else if (s.t === 'svg') {
+    html = '<div class="ls-kicker">설명 ' + s.n + ' / ' + s.of + '</div>' +
+      '<div class="ls-h">' + esc(s.title) + '</div>' +
+      '<div class="ls-svg">' + s.svg + '</div>' +
+      (s.cap ? '<div class="ls-cap">' + s.cap + '</div>' : '');
+  } else if (s.t === 'table') {
+    var thead = '<tr>' + s.head.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr>';
+    var tbody = s.rows.map(function (r) {
+      return '<tr>' + r.map(function (c, i) {
+        return '<td' + (i === 0 ? ' class="k"' : '') + '>' + c + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    html = '<div class="ls-kicker">설명 ' + s.n + ' / ' + s.of + '</div>' +
+      '<div class="ls-h">' + esc(s.title) + '</div>' +
+      '<div class="ls-tblwrap"><table class="ls-tbl">' + thead + tbody + '</table></div>' +
+      (s.cap ? '<div class="ls-cap">' + s.cap + '</div>' : '');
   } else if (s.t === 'card') {
     html = '<div class="ls-kicker">개념 ' + s.n + ' / ' + s.of + '</div>' +
       '<div class="ls-term">' + esc(s.term) + '</div>' +
@@ -891,7 +913,10 @@ function renderLesson() {
   // 보기·해설이 많은 슬라이드, 설명이 긴 카드는 글씨를 줄여 한 화면에 담는다
   var dense = (s.t === 'quiz');
   var longdef = (s.t === 'card' && (String(s.def).length > 60 || String(s.term).length > 14));
-  body.className = 'ls-body' + (dense ? ' dense' : '') + (longdef ? ' longdef' : '');
+  var wide = (s.t === 'svg' || s.t === 'table');
+  var bigtbl = (s.t === 'table' && (s.rows || []).length >= 7);
+  body.className = 'ls-body' + (dense ? ' dense' : '') + (longdef ? ' longdef' : '') +
+    (wide ? ' wide' : '') + (bigtbl ? ' bigtbl' : '');
   body.innerHTML = html;
   body.scrollTop = 0;
 
