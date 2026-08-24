@@ -199,7 +199,7 @@ window.COMHWAL2_LESSON = (function () {
         label(234, 218, '보조기억장치(HDD·SSD)는 주기억을 도와 자료를 오래 보관', C.tx2, 12)),
       cap: '제어장치 = 지시·감독 / 연산장치 = 계산 — <b>둘을 합쳐 CPU</b>' },
     { type: 'svg', title: '자료의 크기 계단',
-      svg: svg('0 0 470 200',
+      svg: svg('0 0 470 224',
         (function () {
           var items = [['비트', '1'], ['니블', '4비트'], ['바이트', '8비트'], ['워드', 'CPU 한 번'], ['필드', ''], ['레코드', ''], ['파일', '']];
           var s = '', x = 14, y = 156, w = 60, step = 18;
@@ -469,7 +469,7 @@ window.COMHWAL2_LESSON = (function () {
         label(300, 214, '시트 이름 31자 · : \\ / ? * [ ] 사용 불가', C.tx2, 10)),
       cap: '셀에 계산 <b>결과</b>가 보이고, 수식 입력줄엔 <b>수식</b>이 보입니다' },
     { type: 'svg', title: '채우기 핸들 — 복사냐 증가냐',
-      svg: svg('0 0 470 220',
+      svg: svg('0 0 546 220',
         label(78, 26, '숫자 1개', C.tx2, 12) +
         sheet(20, 34, 1, 3, 58, 24, { '1,1': '5', '2,1': '5', '3,1': '5' }) +
         label(78, 150, '그냥 끌기', C.tx, 12) + label(78, 168, '= 복사', C.warn, 13) +
@@ -482,7 +482,7 @@ window.COMHWAL2_LESSON = (function () {
         label(424, 26, '문자+숫자', C.tx2, 12) +
         sheet(374, 34, 1, 3, 76, 24, { '1,1': '3급-1', '2,1': '3급-2', '3,1': '3급-3' }) +
         label(424, 150, '문자는 그대로', C.tx, 11) + label(424, 168, '숫자만 +1', C.ok, 13) +
-        label(235, 202, '⚠️ 숫자 하나는 "그냥 끌면 복사" — Ctrl을 눌러야 증가합니다', C.gold, 12.5)),
+        label(273, 202, '⚠️ 숫자 하나는 "그냥 끌면 복사" — Ctrl을 눌러야 증가합니다', C.gold, 12.5)),
       cap: '날짜는 그냥 끌어도 <b>1일씩 증가</b>합니다' },
     { type: 'table', title: '입력 단축키',
       head: ['키', '기능'],
@@ -537,7 +537,7 @@ window.COMHWAL2_LESSON = (function () {
 
   L['excel/formula'] = [
     { type: 'svg', title: '상대참조 · 절대참조 · 혼합참조',
-      svg: svg('0 0 470 230',
+      svg: svg('0 0 504 230',
         label(80, 24, '상대참조  A1', C.warn, 13) +
         sheet(20, 32, 2, 3, 56, 24, { '1,1': '=A1', '2,1': '=A2', '3,1': '=A3' }) +
         label(80, 148, '복사하면 같이 이동', C.warn, 11) +
@@ -601,7 +601,7 @@ window.COMHWAL2_LESSON = (function () {
 
   L['excel/data'] = [
     { type: 'svg', title: '고급 필터 — 같은 행이면 그리고, 다른 행이면 또는',
-      svg: svg('0 0 470 220',
+      svg: svg('0 0 510 220',
         label(118, 26, 'AND (그리고)', C.ok, 15) +
         sheet(30, 38, 2, 2, 80, 26, { '0,1': '국어', '0,2': '영어', '1,1': '>=80', '1,2': '>=90' }) +
         label(118, 132, '국어 80이상 <b>이면서</b>', C.tx, 12) +
@@ -644,7 +644,7 @@ window.COMHWAL2_LESSON = (function () {
 
   L['excel/analysis'] = [
     { type: 'svg', title: '피벗 테이블 4개 영역',
-      svg: svg('0 0 470 220',
+      svg: svg('0 0 500 220',
         box(20, 40, 120, 40, '필터', C.warn, C.card, 13) +
         box(20, 92, 120, 40, '행', C.pri, C.card, 13) +
         box(20, 144, 120, 40, '열', C.ok, C.card, 13) +
@@ -700,7 +700,7 @@ window.COMHWAL2_LESSON = (function () {
         label(66, 166, '맞춤도 [여백]', C.tx2, 10)),
       cap: '⚠️ <b>틀 고정</b>은 화면 전용 — 인쇄에 제목을 반복하려면 <b>반복할 행</b>' },
     { type: 'svg', title: '틀 고정 vs 창 나누기',
-      svg: svg('0 0 470 210',
+      svg: svg('0 0 530 210',
         label(115, 26, '틀 고정', C.ok, 15) +
         sheet(24, 36, 3, 4, 60, 24, {}) +
         '<line x1="84" y1="36" x2="84" y2="156" stroke="' + C.ok + '" stroke-width="3"/>' +
