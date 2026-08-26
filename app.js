@@ -983,22 +983,10 @@ document.addEventListener('keydown', function (e) {
   else if (k === 'f' || k === 'F') { e.preventDefault(); lsFull(); }
   else if (k === 'Escape') { if (!document.fullscreenElement) { e.preventDefault(); lsClose(); } }
 });
-// 좌우 스와이프(전자칠판·태블릿)
-(function () {
-  var x0 = null, y0 = null;
-  var el = document.getElementById('lesson');
-  if (!el) return;
-  el.addEventListener('touchstart', function (e) {
-    if (e.touches.length !== 1) return;
-    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
-  }, { passive: true });
-  el.addEventListener('touchend', function (e) {
-    if (x0 === null) return;
-    var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
-    x0 = null;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { if (dx < 0) lsStep(); else lsBack(); }
-  }, { passive: true });
-})();
+/* 좌우 스와이프로 장을 넘기던 기능을 뺐다 (2026-08-27 · 정리 규칙 2).
+   넘기기는 [◀] [다음 ▶] 단추와 ← → 키로만 한다 — 다른 도구도 모두 같다.
+   설명 본문이 세로로 구르는 화면이라, 폰에서 세로로 밀다 손가락이 옆으로
+   조금만 흘러도 장이 넘어가 버렸다. */
 
 /* ---------- init ---------- */
 updateHeader();
