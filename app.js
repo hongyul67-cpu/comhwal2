@@ -169,7 +169,7 @@ function renderUnits() {
 
 function renderHome() {
   clearExamTimer();
-  hide('modeSel'); hide('game'); hide('result'); show('home');
+  hide('modeSel'); hide('game'); hide('result'); hide('summary'); show('home');
   renderSubjects();
   updateHeader();      // 헤더 뱃지와 랭크 카드를 항상 같은 값으로 맞춤
   renderExamBar();
@@ -189,10 +189,28 @@ function renderReviewBar() {
 }
 function goHome() { renderHome(); }
 
+/* ---------- 시험 직전 핵심 요약 ----------
+   예전에는 summary.html 이 따로 있었다. 이제 입구는 index.html 하나뿐이라
+   그 내용이 #summary 화면으로 들어왔다. 클래스 이름은 본체와 겹쳐서 sm- 를 붙였다. */
+function goSummary() {
+  hide('home'); hide('modeSel'); hide('game'); hide('result'); show('summary');
+  window.scrollTo(0, 0);
+}
+function smPick(t) {
+  var box = $('summary');
+  [].forEach.call(box.querySelectorAll('.sm-tab'), function (el) {
+    el.classList.toggle('sm-on', el.dataset.t === t);
+  });
+  [].forEach.call(box.querySelectorAll('.sm-subject'), function (el) {
+    el.classList.toggle('sm-on', el.id === t);
+  });
+  window.scrollTo(0, 0);
+}
+
 /* ---------- 모드 선택 ---------- */
 function openUnit(u) {
   state.unit = u;
-  hide('home'); hide('game'); hide('result'); show('modeSel');
+  hide('home'); hide('game'); hide('result'); hide('summary'); show('modeSel');
   $('modeUnitName').textContent = DATA[state.subject].icon + ' ' + u.name;
 }
 
@@ -863,11 +881,13 @@ function startLesson() {
   $('lsTitle').textContent = DATA[state.subject].icon + ' ' + state.unit.name;
   show('lesson');
   document.body.style.overflow = 'hidden';
+  document.body.classList.add('ls-open');   /* 떠 있는 위젯 숨기기 */
   renderLesson();
 }
 function lsClose() {
   hide('lesson');
   document.body.style.overflow = '';
+  document.body.classList.remove('ls-open');
   if (document.fullscreenElement && document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) {} }
 }
 function lsFull() {
