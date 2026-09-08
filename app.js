@@ -96,6 +96,11 @@ function recordResult(pct, xpGain) {
   rec.best = Math.max(rec.best, pct);
   rec.stars = newStars;
   rec.xp += xpGain;
+  /* 어느 모드를 실제로 풀었는지 남긴다 (2026-09-08).
+     별 하나만 보고는 «이 단원 다 했다»로 읽혀서, 안 한 모드까지 한 것처럼 보인다는
+     이야기가 나왔다. 단원 카드에 모드별 표시를 함께 띄우려고 기록해 둔다. */
+  rec.modes = rec.modes || {};
+  if (state.mode) rec.modes[state.mode] = true;
   PROG.units[key] = rec;
   PROG.totXp += xpGain;
   saveProg(PROG);
@@ -155,12 +160,20 @@ function renderUnits() {
     const rec = PROG.units[key] || { best: 0, stars: 0 };
     const nQ = (u.quiz ? u.quiz.length : 0) + (u.ox ? u.ox.length : 0);
     const starTxt = '★★★'.slice(0, rec.stars) + '☆☆☆'.slice(0, 3 - rec.stars);
+    /* 어느 모드를 풀었는지 그대로 보여 준다 — 별 하나로는 «다 했다»처럼 읽힌다.
+       예전 기록에는 modes 가 없다. 그때는 표시를 생략하고 별만 둔다. */
+    const MODE_NM = { cards: '카드', quiz: '퀴즈', ox: 'OX', match: '매칭' };
+    const done = rec.modes || null;
+    const modeTxt = done
+      ? Object.keys(MODE_NM).map(m => (done[m] ? '<b>' + MODE_NM[m] + '</b>' : MODE_NM[m])).join(' · ')
+      : '';
     const el = document.createElement('div');
     el.className = 'unit';
-    el.innerHTML = `<div class="star">${rec.stars ? starTxt : ''}</div>
+    el.innerHTML = `<div class="star" title="점수를 낸 모드 가운데 가장 잘한 기록입니다. 네 모드를 다 풀었다는 뜻은 아닙니다.">${rec.stars ? starTxt : ''}</div>
       <div class="uico">${u.icon}</div>
       <div class="unm">${u.name}</div>
       <div class="cnt">카드 ${u.cards.length} · 문제 ${nQ}</div>
+      ${modeTxt ? `<div class="mdone">${modeTxt}</div>` : ''}
       <div class="bar"><i style="width:${rec.best}%"></i></div>`;
     el.onclick = () => openUnit(u);
     box.appendChild(el);
@@ -296,8 +309,8 @@ function renderQuiz() {
   state.answered = false;
   updateHud(total);
   const opts = item.opts.map((o, i) =>
-    `<div class="opt" data-i="${i}" onclick="answerQuiz(${i})">
-       <div class="k">${'ABCD'[i]}</div><div>${o.t}</div></div>`).join('');
+    `<button type="button" class="opt" data-i="${i}" onclick="answerQuiz(${i})">
+       <div class="k">${'ABCD'[i]}</div><div>${o.t}</div></button>`).join('');
   $('stage').innerHTML = `
     <div class="qcard">
       <div class="row" style="justify-content:space-between">
@@ -699,8 +712,8 @@ function renderExamQ() {
   $('hudLeft').textContent = (state.idx + 1) + ' / ' + total;
   $('pgFill').style.width = (state.idx / total * 100) + '%';
   var opts = item.opts.map(function (o, i) {
-    return '<div class="opt' + (item.sel === i ? ' sel' : '') + '" onclick="selectExam(' + i + ')">' +
-      '<div class="k">' + 'ABCD'[i] + '</div><div>' + o.t + '</div></div>';
+    return '<button type="button" class="opt' + (item.sel === i ? ' sel' : '') + '" onclick="selectExam(' + i + ')">' +
+      '<div class="k">' + 'ABCD'[i] + '</div><div>' + o.t + '</div></button>';
   }).join('');
   var last = state.idx === total - 1;
   $('stage').innerHTML =
@@ -850,143 +863,10 @@ function submitExamResult() {
 function openBoard() { CH2Rank.openBoard(); }
 function rankRegisterHtml() { return CH2Rank.registerBtnHtml(); }
 
-/* ============ 7) 설명 모드 (프로젝터·전자칠판) ============
- * 단원의 개념 카드 + 퀴즈를 큰 화면 슬라이드로 넘기며 설명한다.
- * 2단계 진행: 용어/발문만 보여 주고 → (키 한 번) 설명/정답 공개 → (키) 다음.
- */
-var LS = { deck: [], i: 0, shown: false };
-
-function buildLessonDeck(unit, subjName) {
-  var d = [];
-  d.push({ t: 'cover', title: unit.name, sub: subjName, icon: unit.icon || '📘' });
-  // 그림 도해 · 개념 정리표 (data/lesson.js)
-  var extra = (window.COMHWAL2_LESSON || {})[state.subject + '/' + unit.id] || [];
-  extra.forEach(function (s, i) {
-    d.push({ t: s.type, n: i + 1, of: extra.length, title: s.title, svg: s.svg,
-             head: s.head, rows: s.rows, cap: s.cap });
-  });
-  (unit.cards || []).forEach(function (c, i) {
-    d.push({ t: 'card', n: i + 1, of: (unit.cards || []).length, term: c.t, def: c.d });
-  });
-  (unit.quiz || []).forEach(function (q, i) {
-    d.push({ t: 'quiz', n: i + 1, of: (unit.quiz || []).length, q: q.q, o: q.o, a: q.a, ex: q.ex });
-  });
-  d.push({ t: 'end', title: '수업 끝!', sub: unit.name, icon: '🎉' });
-  return d;
-}
-function startLesson() {
-  if (!state.unit) { renderHome(); return; }
-  LS.deck = buildLessonDeck(state.unit, DATA[state.subject].name);
-  LS.i = 0; LS.shown = false;
-  $('lsTitle').textContent = DATA[state.subject].icon + ' ' + state.unit.name;
-  show('lesson');
-  document.body.style.overflow = 'hidden';
-  document.body.classList.add('ls-open');   /* 떠 있는 위젯 숨기기 */
-  renderLesson();
-}
-function lsClose() {
-  hide('lesson');
-  document.body.style.overflow = '';
-  document.body.classList.remove('ls-open');
-  if (document.fullscreenElement && document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) {} }
-}
-function lsFull() {
-  var el = $('lesson');
-  if (!document.fullscreenElement) { if (el.requestFullscreen) el.requestFullscreen().catch(function () {}); }
-  else if (document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) {} }
-}
-function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-function renderLesson() {
-  var s = LS.deck[LS.i], body = $('lsBody'), html = '';
-  $('lsCount').textContent = (LS.i + 1) + ' / ' + LS.deck.length;
-
-  if (s.t === 'cover' || s.t === 'end') {
-    html = '<div class="ls-cover">' +
-      '<div style="font-size:min(12vh,15vw)">' + s.icon + '</div>' +
-      '<div class="ls-term">' + esc(s.title) + '</div>' +
-      '<div class="ls-hint" style="margin-top:min(2vh,14px)">' + esc(s.sub) + '</div>' +
-      (s.t === 'cover' ? '<div class="ls-hint" style="margin-top:min(3vh,20px)">→ · Space · 리모컨으로 넘기세요</div>' : '') +
-      '</div>';
-  } else if (s.t === 'svg') {
-    html = '<div class="ls-kicker">설명 ' + s.n + ' / ' + s.of + '</div>' +
-      '<div class="ls-h">' + esc(s.title) + '</div>' +
-      '<div class="ls-svg">' + s.svg + '</div>' +
-      (s.cap ? '<div class="ls-cap">' + s.cap + '</div>' : '');
-  } else if (s.t === 'table') {
-    var thead = '<tr>' + s.head.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr>';
-    var tbody = s.rows.map(function (r) {
-      return '<tr>' + r.map(function (c, i) {
-        return '<td' + (i === 0 ? ' class="k"' : '') + '>' + c + '</td>';
-      }).join('') + '</tr>';
-    }).join('');
-    html = '<div class="ls-kicker">설명 ' + s.n + ' / ' + s.of + '</div>' +
-      '<div class="ls-h">' + esc(s.title) + '</div>' +
-      '<div class="ls-tblwrap"><table class="ls-tbl">' + thead + tbody + '</table></div>' +
-      (s.cap ? '<div class="ls-cap">' + s.cap + '</div>' : '');
-  } else if (s.t === 'card') {
-    html = '<div class="ls-kicker">개념 ' + s.n + ' / ' + s.of + '</div>' +
-      '<div class="ls-term">' + esc(s.term) + '</div>' +
-      (LS.shown
-        ? '<div class="ls-def">' + esc(s.def) + '</div>'
-        : '<div class="ls-ask">❓ 무엇일까요?</div>');
-  } else if (s.t === 'quiz') {
-    var opts = s.o.map(function (t, i) {
-      var hit = LS.shown && i === s.a;
-      return '<div class="ls-opt' + (hit ? ' hit' : '') + '">' +
-        '<div class="lk">' + '①②③④'[i] + '</div><div>' + esc(t) + '</div></div>';
-    }).join('');
-    html = '<div class="ls-kicker">확인 문제 ' + s.n + ' / ' + s.of + '</div>' +
-      '<div class="ls-q">' + esc(s.q) + '</div>' +
-      '<div class="ls-opts">' + opts + '</div>' +
-      (LS.shown ? '<div class="ls-ex"><b>해설</b><br>' + esc(s.ex) + '</div>' : '');
-  }
-  // 보기·해설이 많은 슬라이드, 설명이 긴 카드는 글씨를 줄여 한 화면에 담는다
-  var dense = (s.t === 'quiz');
-  var longdef = (s.t === 'card' && (String(s.def).length > 60 || String(s.term).length > 14));
-  var wide = (s.t === 'svg' || s.t === 'table');
-  var bigtbl = (s.t === 'table' && (s.rows || []).length >= 7);
-  body.className = 'ls-body' + (dense ? ' dense' : '') + (longdef ? ' longdef' : '') +
-    (wide ? ' wide' : '') + (bigtbl ? ' bigtbl' : '');
-  body.innerHTML = html;
-  body.scrollTop = 0;
-
-  // 버튼: 아직 안 보여준 단계가 있으면 '공개', 없으면 '다음'
-  var canReveal = (s.t === 'card' || s.t === 'quiz') && !LS.shown;
-  var nb = $('lsNext');
-  nb.textContent = canReveal ? (s.t === 'quiz' ? '정답 보기 👀' : '설명 보기 👀')
-    : (LS.i === LS.deck.length - 1 ? '끝내기 ✓' : '다음 ▶');
-  nb.className = canReveal ? 'rev' : 'main';
-  $('lsPrev').disabled = (LS.i === 0 && !LS.shown);
-}
-function lsStep() {
-  var s = LS.deck[LS.i];
-  if ((s.t === 'card' || s.t === 'quiz') && !LS.shown) { LS.shown = true; renderLesson(); return; }
-  if (LS.i >= LS.deck.length - 1) { lsClose(); return; }
-  LS.i++; LS.shown = false; renderLesson();
-}
-function lsBack() {
-  var s = LS.deck[LS.i];
-  if ((s.t === 'card' || s.t === 'quiz') && LS.shown) { LS.shown = false; renderLesson(); return; }
-  if (LS.i === 0) return;
-  LS.i--;
-  var p = LS.deck[LS.i];
-  LS.shown = (p.t === 'card' || p.t === 'quiz');   // 앞으로 돌아가면 이미 설명한 상태로
-  renderLesson();
-}
-// 키보드 · 프레젠터 리모컨(PageUp/PageDown)
-document.addEventListener('keydown', function (e) {
-  if ($('lesson').classList.contains('hidden')) return;
-  var k = e.key;
-  if (k === 'ArrowRight' || k === ' ' || k === 'Spacebar' || k === 'PageDown') { e.preventDefault(); lsStep(); }
-  else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); lsBack(); }
-  else if (k === 'f' || k === 'F') { e.preventDefault(); lsFull(); }
-  else if (k === 'Escape') { if (!document.fullscreenElement) { e.preventDefault(); lsClose(); } }
-});
-/* 좌우 스와이프로 장을 넘기던 기능을 뺐다 (2026-08-27 · 정리 규칙 2).
-   넘기기는 [◀] [다음 ▶] 단추와 ← → 키로만 한다 — 다른 도구도 모두 같다.
-   설명 본문이 세로로 구르는 화면이라, 폰에서 세로로 밀다 손가락이 옆으로
-   조금만 흘러도 장이 넘어가 버렸다. */
+/* 예전에는 여기에 「설명 모드」(프로젝터용 전체 화면)가 있었다. 2026-09-08 에 걷어냈다.
+   큰 화면이 홈의 「수업 슬라이드」와 둘이라 어느 쪽을 열어야 하는지 알 수 없다는 이야기가 나왔다.
+   설명 모드가 쓰던 자료(도해 111장 · 개념카드 · 퀴즈)는 버리지 않고
+   lesson.js 의 보강 슬라이드로 옮겼다. 큰 화면은 이제 공용 뷰어(links/board-pro.js) 하나뿐이다. */
 
 /* ---------- init ---------- */
 updateHeader();

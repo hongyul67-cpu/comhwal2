@@ -86,87 +86,6 @@
   .reviewitem .opt.correct{border-color:var(--ok);background:rgba(39,192,147,.16)}
   .reviewitem .opt.wrong{border-color:var(--no);background:rgba(255,90,106,.16)}
 
-  /* ===== 설명 모드 (프로젝터·큰 화면) ===== */
-  /* 설명 모드가 열려 있는 동안에는 본체의 떠 있는 위젯을 숨긴다.
-     레이어가 덮고 있어도 reset.js 의 🧹 버튼(z-index 9998)이 위로 올라와
-     아래 [◀] [다음 ▶] 과 겹쳤다. 슬라이드 뷰어가 쓰는 방식과 같다. */
-  body.ls-open #bb-btn,
-  body.ls-open .tr-btn,
-  body.ls-open #rk-badge{display:none!important}
-  #lesson{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;
-    user-select:none;-webkit-user-select:none}
-  #lesson.hidden{display:none!important}
-  .ls-top{display:flex;align-items:center;gap:12px;padding:min(2vh,14px) min(3vw,22px) 0;flex:none}
-  .ls-title{font-weight:800;font-size:min(2.6vh,20px);color:var(--pri2)}
-  .ls-sp{flex:1}
-  .ls-count{font-size:min(2.3vh,17px);color:var(--tx2);font-weight:700;font-variant-numeric:tabular-nums}
-  .ls-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;padding:min(2vh,16px) min(4vw,40px);overflow:auto;gap:min(2.4vh,18px)}
-
-  .ls-kicker{font-size:min(2.6vh,20px);color:var(--pri2);font-weight:800;letter-spacing:1px}
-  .ls-term{font-size:min(8vh,10vw);font-weight:900;line-height:1.15;letter-spacing:-1px}
-  .ls-def{font-size:min(4.4vh,5.4vw);line-height:1.5;max-width:22em;color:var(--tx)}
-  .ls-ask{font-size:min(3.4vh,4.6vw);color:var(--gold);font-weight:800}
-  .ls-q{font-size:min(4.4vh,5.6vw);font-weight:800;line-height:1.4;max-width:24em}
-  .ls-opts{display:grid;gap:min(1.4vh,12px);width:min(100%,900px);margin-top:min(1vh,8px)}
-  .ls-opt{display:flex;gap:min(1.6vw,14px);align-items:center;text-align:left;
-    background:var(--card);border:2px solid var(--line);border-radius:14px;
-    padding:min(1.8vh,15px) min(2.4vw,20px);font-size:min(3.4vh,4.2vw);line-height:1.35}
-  .ls-opt .lk{flex:none;width:min(4.4vh,38px);height:min(4.4vh,38px);border-radius:10px;background:var(--card2);
-    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:min(2.6vh,20px)}
-  .ls-opt.hit{border-color:var(--ok);background:rgba(39,192,147,.18);
-    box-shadow:0 0 0 4px rgba(39,192,147,.22)}
-  .ls-opt.hit .lk{background:var(--ok);color:#04231a}
-  .ls-ex{font-size:min(3.2vh,4.2vw);line-height:1.55;max-width:26em;color:var(--tx2);
-    background:var(--card);border-left:5px solid var(--ok);border-radius:12px;
-    padding:min(2vh,16px) min(3vw,22px);text-align:left}
-  .ls-cover .ls-term{font-size:min(9vh,11vw)}
-  .ls-hint{font-size:min(2.4vh,18px);color:var(--tx2)}
-
-  /* 보기 4개 + 해설이 한 화면에 들어가도록 조밀하게 (넘침 0) */
-  .ls-body.dense{gap:min(1.3vh,10px)}
-  .ls-body.dense .ls-kicker{font-size:min(2vh,16px)}
-  .ls-body.dense .ls-q{font-size:min(3.3vh,4.4vw)}
-  .ls-body.dense .ls-opts{gap:min(1vh,8px)}
-  .ls-body.dense .ls-opt{font-size:min(2.6vh,3.4vw);padding:min(1.2vh,10px) min(2vw,16px);border-radius:12px}
-  .ls-body.dense .ls-opt .lk{width:min(3.4vh,30px);height:min(3.4vh,30px);font-size:min(2vh,16px);border-radius:8px}
-  .ls-body.dense .ls-ex{font-size:min(2.5vh,3.3vw);padding:min(1.4vh,12px) min(2.2vw,17px);max-width:34em}
-  /* 설명이 긴 개념 카드도 안 넘치게 */
-  .ls-body.longdef .ls-term{font-size:min(6vh,8vw)}
-  .ls-body.longdef .ls-def{font-size:min(3.6vh,4.6vw);max-width:26em}
-
-  /* 그림 도해 · 개념 정리표 슬라이드 */
-  .ls-body.wide{gap:min(1.6vh,12px);justify-content:flex-start;padding-top:min(2vh,14px)}
-  .ls-h{font-size:min(4.4vh,5.6vw);font-weight:900;line-height:1.25;letter-spacing:-.5px}
-  .ls-svg{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
-  .ls-svg svg{max-width:min(100%,1000px);max-height:100%;height:auto;width:auto}
-  .ls-cap{font-size:min(2.6vh,3.4vw);color:var(--tx2);line-height:1.5;max-width:40em}
-  .ls-cap b{color:var(--gold)}
-  .ls-tblwrap{width:100%;max-width:1000px;overflow:auto;flex:0 1 auto}
-  .ls-tbl{border-collapse:collapse;width:100%;font-size:min(2.9vh,3.5vw)}
-  .ls-tbl th,.ls-tbl td{border:1px solid var(--line);padding:min(1.3vh,11px) min(1.6vw,14px);
-    text-align:left;line-height:1.4}
-  .ls-tbl th{background:rgba(79,124,255,.2);font-weight:800;white-space:nowrap;font-size:min(2.6vh,3.2vw)}
-  .ls-tbl td.k{font-weight:800;white-space:nowrap;color:var(--tx)}
-  .ls-tbl td b{color:var(--gold)}
-  .ls-tbl tr:nth-child(even) td{background:rgba(255,255,255,.03)}
-  /* 줄이 많은 표는 더 작게 */
-  .ls-body.bigtbl .ls-tbl{font-size:min(2.3vh,2.9vw)}
-  .ls-body.bigtbl .ls-tbl th{font-size:min(2.1vh,2.7vw)}
-  .ls-body.bigtbl .ls-tbl th,.ls-body.bigtbl .ls-tbl td{padding:min(.9vh,8px) min(1.2vw,11px)}
-  .ls-body.bigtbl .ls-h{font-size:min(3.6vh,4.6vw)}
-
-  .ls-bar{flex:none;display:flex;gap:min(1.6vw,12px);padding:min(1.6vh,12px) min(3vw,22px) max(min(2.4vh,18px),14px);
-    border-top:1px solid var(--line);background:var(--bg2)}
-  .ls-bar button{flex:1;min-height:56px;border:1px solid var(--line);background:var(--card);color:var(--tx);
-    border-radius:14px;font-size:min(2.6vh,18px);font-weight:800;cursor:pointer;transition:.12s}
-  .ls-bar button:hover{border-color:var(--pri)}
-  .ls-bar button:disabled{opacity:.4;cursor:default}
-  .ls-bar button.main{background:var(--pri);border-color:var(--pri);color:#fff;flex:2}
-  .ls-bar button.rev{background:var(--gold);border-color:var(--gold);color:#241c00;flex:2}
-  .ls-bar button.icon{flex:0 0 auto;min-width:56px}
-  @media(max-width:520px){ .ls-bar button{font-size:15px} }
-
   /* 오답 복습 바 */
   .revcard{display:flex;align-items:center;justify-content:space-between;gap:12px;
     background:linear-gradient(135deg,rgba(255,178,32,.16),rgba(255,90,106,.14));
@@ -186,6 +105,9 @@
   .unit .uico{font-size:26px}
   .unit .unm{font-weight:700;margin-top:6px;font-size:14px;line-height:1.3}
   .unit .cnt{font-size:11px;color:var(--tx2);margin-top:4px}
+  /* 어느 모드를 풀었는지 — 푼 것은 진하게, 안 푼 것은 흐리게 */
+  .unit .mdone{font-size:10.5px;color:var(--tx2);margin-top:3px;opacity:.75}
+  .unit .mdone b{color:var(--ok);font-weight:800}
   .unit .bar{height:5px;background:var(--card2);border-radius:4px;margin-top:8px;overflow:hidden}
   .unit .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),#5fe3b8);width:0}
   .unit .star{position:absolute;top:10px;right:10px;font-size:13px}
@@ -225,8 +147,12 @@
   .qnum{font-size:12px;color:var(--tx2);font-weight:700;letter-spacing:1px}
   .qtext{font-size:19px;font-weight:700;line-height:1.5;margin:10px 0 20px}
   .opts{display:grid;gap:10px}
+  /* 보기는 <button> 이다. 전자칠판 터치에서 <div onclick> 이 자주 씹혀 2026-09-08 에 바꿨다.
+     아래 줄들은 button 의 기본 모양을 지우고 예전 <div> 모양을 그대로 되살리는 것이다. */
   .opt{background:var(--card2);border:1.5px solid transparent;border-radius:12px;padding:14px 16px;
-    font-size:15px;cursor:pointer;transition:.12s;display:flex;gap:10px;align-items:center}
+    font-size:15px;cursor:pointer;transition:.12s;display:flex;gap:10px;align-items:center;
+    width:100%;text-align:left;color:inherit;font-family:inherit;line-height:1.5;
+    min-height:52px;touch-action:manipulation;-webkit-appearance:none;appearance:none}
   .opt:hover{border-color:var(--pri)}
   .opt .k{width:24px;height:24px;border-radius:7px;background:var(--card);display:flex;
     align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
@@ -421,9 +347,6 @@
       <div class="mode" onclick="startQuiz()"><div class="mico">⚡</div><div class="mnm">스피드 퀴즈</div><div class="mds">4지선다 + 타이머<br>콤보로 고득점!</div></div>
       <div class="mode" onclick="startOX()"><div class="mico">⭕</div><div class="mnm">OX 퀴즈</div><div class="mds">빠른 판단 훈련<br>헷갈리는 개념 정리</div></div>
       <div class="mode" onclick="startMatch()"><div class="mico">🔗</div><div class="mnm">용어 매칭</div><div class="mds">용어↔설명 짝맞추기<br>기억력 게임</div></div>
-      <div class="mode" onclick="startLesson()" style="grid-column:1/-1;border-color:var(--gold)">
-        <div class="mico">📽️</div><div class="mnm">설명 모드</div>
-        <div class="mds">프로젝터용 큰 화면 수업<br>용어 먼저 묻고 → 설명 공개 · 리모컨(PageUp/Down) 지원</div></div>
     </div>
   </section>
 
@@ -744,22 +667,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-
-<!-- 설명 모드 (프로젝터용 전체 화면) -->
-<div id="lesson" class="hidden">
-  <div class="ls-top">
-    <div class="ls-title" id="lsTitle"></div>
-    <div class="ls-sp"></div>
-    <div class="ls-count" id="lsCount"></div>
-  </div>
-  <div class="ls-body" id="lsBody"></div>
-  <div class="ls-bar">
-    <button class="icon" onclick="lsBack()" id="lsPrev" title="이전 (←)">◀</button>
-    <button class="main" onclick="lsStep()" id="lsNext">다음 ▶</button>
-    <button class="icon" onclick="lsFull()" title="전체 화면 (F)">⛶</button>
-    <button class="icon" onclick="lsClose()" title="닫기 (Esc)">✕</button>
-  </div>
-</div>
 
 <!-- 결과 제출 위젯 (교사가 ?rc=<AppsScript URL> 링크로 배포하면 활성화) -->
 <script src="https://hongyul67-cpu.github.io/links/collector.js"
