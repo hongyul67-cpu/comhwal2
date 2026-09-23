@@ -213,7 +213,8 @@
   .rstat .v{font-size:22px;font-weight:800} .rstat .l{font-size:11px;color:var(--tx2)}
 
   .toast{position:fixed;left:50%;top:20%;transform:translateX(-50%);z-index:50;
-    font-size:30px;font-weight:900;pointer-events:none;text-shadow:0 4px 12px rgba(0,0,0,.5)}
+    font-size:30px;font-weight:900;pointer-events:none;text-shadow:0 4px 12px rgba(0,0,0,.5);
+    opacity:0}  /* 평소엔 투명 — 애니메이션이 끝나면 이 값으로 돌아가야 글자가 화면에 남지 않는다 */
   .toast.show{animation:toastanim .8s ease-out}
   @keyframes toastanim{0%{opacity:0;transform:translateX(-50%) scale(.6)}
     30%{opacity:1;transform:translateX(-50%) scale(1.15)}100%{opacity:0;transform:translateX(-50%) translateY(-30px)}}
