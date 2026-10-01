@@ -225,6 +225,35 @@ function openUnit(u) {
   state.unit = u;
   hide('home'); hide('game'); hide('result'); hide('summary'); show('modeSel');
   $('modeUnitName').textContent = DATA[state.subject].icon + ' ' + u.name;
+  renderUnitFigs();
+}
+
+/* ---------- 그림 (figs.js · links/fig.js) ----------
+   단원 화면에는 그 단원 그림을 모아 먼저 보여 주고(배우기 먼저),
+   개념 카드는 뒤집었을 때 카드 아래에 그 카드의 그림을 보여 준다.
+   어느 그림이 어느 단원·카드에 붙는지는 figs.js 의 topics · cards 가 정한다. */
+function figsForUnit() {
+  if (!window.FIG || !window.FIGS || !state.unit) return [];
+  var key = unitKey(state.subject, state.unit.id);
+  return Object.keys(FIGS).filter(function (k) { return (FIGS[k].topics || []).indexOf(key) >= 0; });
+}
+function figForCard(t) {
+  if (!window.FIG || !window.FIGS) return null;
+  var ks = Object.keys(FIGS);
+  for (var i = 0; i < ks.length; i++) if ((FIGS[ks[i]].cards || []).indexOf(t) >= 0) return ks[i];
+  return null;
+}
+function renderUnitFigs() {
+  var box = $('unitFigs');
+  if (!box) return;
+  var keys = figsForUnit();
+  if (!keys.length) { box.innerHTML = ''; return; }
+  var open = true;
+  try { open = localStorage.getItem('comhwal2_figs_closed') !== '1'; } catch (e) {}
+  box.innerHTML = '<details class="figbox"' + (open ? ' open' : '') + '><summary>🖼️ 그림으로 먼저 보기 <small>' + keys.length +
+    '장 · 그림을 누르면 크게</small></summary>' + FIG.gallery(keys) + '</details>';
+  var d = box.querySelector('details');
+  d.addEventListener('toggle', function () { try { localStorage.setItem('comhwal2_figs_closed', d.open ? '0' : '1'); } catch (e) {} });
 }
 
 /* ---------- 게임 공통 ---------- */
@@ -270,14 +299,20 @@ function renderCard() {
     <div class="flip"><div class="flipinner" id="flipEl" onclick="flipCard()">
       <div class="face front"><div class="tlabel">용어</div><div class="term">${c.t}</div>
         <div class="hint">👆 탭하면 설명이 나와요</div></div>
-      <div class="face back"><div class="tlabel">설명</div><div class="def">${c.d}</div></div>
+      <div class="face back"><div class="tlabel">설명</div><div class="def">${c.d}</div>
+        ${figForCard(c.t) ? '<div class="hint">🖼️ 아래에 그림이 있어요</div>' : ''}</div>
     </div></div>
+    ${figForCard(c.t) ? '<div class="cardfig hidden" id="cardFig">' + FIG.figure(figForCard(c.t)) + '</div>' : ''}
     <div class="row" style="gap:10px">
       <button class="btn ghost" style="flex:1" onclick="prevCard()" ${state.idx === 0 ? 'disabled' : ''}>← 이전</button>
       <button class="btn" style="flex:1" onclick="nextCard()">${state.idx === total - 1 ? '완료 ✓' : '다음 →'}</button>
     </div>`;
 }
-function flipCard() { $('flipEl').classList.toggle('flipped'); }
+function flipCard() {
+  var on = $('flipEl').classList.toggle('flipped');
+  var f = $('cardFig');           // 그림은 뒷면(설명)을 볼 때만 — 앞면에서는 감춘다
+  if (f) f.classList.toggle('hidden', !on);
+}
 function prevCard() { if (state.idx > 0) { state.idx--; renderCard(); } }
 function nextCard() {
   if (state.idx < state.queue.length - 1) { state.idx++; renderCard(); }

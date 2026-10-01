@@ -26,6 +26,9 @@ st.textContent =
   '  width:100%;min-width:0;flex:1 1 100%}' +
   '#bp .bp-fig .cwfig svg{width:100%;height:auto;max-height:30vh}' +
   '#bp-in.compact .bp-fig .cwfig svg{max-height:18vh}' +
+  /* 새 그림(figs.js)은 흰 종이 한 장이라 조금 더 크게 */
+  '#bp .bp-fig .cwfig svg.fig-svg{max-height:38vh;border-radius:10px}' +
+  '#bp-in.compact .bp-fig .cwfig svg.fig-svg{max-height:22vh}' +
   '#bp .bp-fig table.cw{border-collapse:collapse;width:100%;' +
   '  font-size:clamp(12px,1.05vw,19px);font-family:"Malgun Gothic",sans-serif}' +
   '#bp .bp-fig table.cw th,#bp .bp-fig table.cw td{border:1px solid #2f3b4f;padding:4px 8px;text-align:left}' +
@@ -49,8 +52,53 @@ function render(s) {
   return '<div class="cwfig">' + body + (s.cap ? '<div class="cwcap">' + s.cap + '</div>' : '') + '</div>';
 }
 
+/* ── 새 그림(figs.js) ──
+   같은 주제를 규격대로 다시 그린 그림이 figs.js 에 있으면(slide:['comp/win#4']) 옛 도해 대신 그것을 쓴다.
+   배우기 화면과 같은 그림이다. figs.js 를 못 불러오면 옛 도해로 돌아간다.
+   슬라이드에서는 그 장의 빈칸({{ }})·퀴즈 정답이 되는 글자를 그림에서 ? 로 가린다(정답 유출 방지). */
+function plain(h) {
+  return String(h == null ? '' : h).replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+function maskWords(s, e) {
+  var w = [];
+  function add(x) {
+    x = plain(x).trim();
+    if (!x) return;
+    if (x.length >= 2 && x.length <= 26) w.push(x);
+    x.split(/[;\/→+(),\[\]]|\s·\s|\s-\s/).forEach(function (p) { p = p.trim(); if (p.length >= 2 && p !== x) w.push(p); });
+  }
+  ((s && s.pts) || []).forEach(function (p) { (String(p).match(/\{\{(.+?)\}\}/g) || []).forEach(function (b) { add(b.slice(2, -2)); }); });
+  if (s && s.anso && s.ansa != null) add(s.anso[s.ansa]);
+  (e.hide || []).forEach(function (x) { w.push(x); });
+  return w.sort(function (a, b) { return b.length - a.length; });
+}
+function maskSvg(svg, words) {
+  if (!words.length) return svg;
+  var esc = words.map(function (x) { return x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); });
+  return svg.replace(/(<text[^>]*>)([\s\S]*?)(<\/text>)/g, function (m, a, body, z) {
+    var out = body.split(/(<[^>]+>)/).map(function (part) {
+      if (part.charAt(0) === '<') return part;
+      esc.forEach(function (x) { if (part.indexOf(x) >= 0) part = part.split(x).join('?'); });
+      return part;
+    }).join('');
+    return a + out + z;
+  });
+}
+function newFigure(key, s) {
+  var F = window.FIG, G = window.FIGS;
+  if (!F || !G || !F.svgOf) return '';
+  var k = null;
+  for (var n in G) if ((G[n].slide || []).indexOf(key) >= 0) { k = n; break; }
+  if (!k) return '';
+  var svg = F.svgOf(k, { labels: false });
+  if (!svg) return '';
+  return '<div class="cwfig">' + maskSvg(svg, maskWords(s, G[k])) + '</div>';
+}
+
 /* fig:'comp/win#4' → COMHWAL2_LESSON['comp/win'][4] */
-function figure(key) {
+function figure(key, s) {
+  var nf = newFigure(key, s);
+  if (nf) return nf;
   var L = window.COMHWAL2_LESSON || {};
   var p = String(key).split('#');
   var a = L[p[0]] || [];
@@ -1196,7 +1244,7 @@ var LESSON = [];
 var FIG = {};
 LESSON.forEach(function (s) {
   if (s.fig && !FIG[s.fig]) {
-    FIG[s.fig] = (function (k) { return function () { return figure(k); }; })(s.fig);
+    FIG[s.fig] = (function (k) { return function (sl) { return figure(k, sl); }; })(s.fig);
   }
 });
 
